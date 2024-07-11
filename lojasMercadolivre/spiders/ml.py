@@ -6,7 +6,7 @@ import scrapy
 import pandas
 
 start_row = 20  
-end_row = 33
+end_row = 37
 num_rows = end_row - start_row
 
 df = pandas.read_excel("GESTÃO DE AÇÕES E-COMMERCE.xlsx", usecols='C:K', skiprows=start_row, nrows=num_rows, engine='openpyxl')
@@ -67,6 +67,22 @@ for index, i in df.iterrows():
         fonte200Marketplace = round(i['COLUNA3'], 2);
         fonte200Classico = round(i['COLUNA5'], 2);
         fonte200Premium = round(i['COLUNA7'], 2);
+    elif i['PRODUTO'] == "K1200":
+        k1200Marketplace = round(i['COLUNA3'], 2);
+        k1200Classico = round(i['COLUNA5'], 2);
+        k1200Premium = round(i['COLUNA7'], 2);
+    elif i['PRODUTO'] == "K600":
+        k600Marketplace = round(i['COLUNA3'], 2);
+        k600Classico = round(i['COLUNA5'], 2);
+        k600Premium = round(i['COLUNA7'], 2);
+    elif i['PRODUTO'] == "CONTROLE WR":
+        controleWrMarketplace = round(i['COLUNA3'], 2);
+        controleWrClassico = round(i['COLUNA5'], 2);
+        controleWrPremium = round(i['COLUNA7'], 2);
+    elif i['PRODUTO'] == "ACQUA":
+        acquaMarketplace = round(i['COLUNA3'], 2);
+        acquaClassico = round(i['COLUNA5'], 2);
+        acquaPremium = round(i['COLUNA7'], 2);
 
 def identificar_modelo(nome, preco, categoria):
     new_name = unidecode(nome.lower())
@@ -110,6 +126,14 @@ def identificar_modelo(nome, preco, categoria):
     if "bob" in new_name and "lite" not in new_name and "light" not in new_name  and "controle" not in new_name and 'jfa' in new_name and 'mono' not in new_name and 'mono' not in new_name and 'monovolt' not in new_name and '220v' not in new_name:
         if "200a" in new_name or "200" in new_name or "200 amperes" in new_name or "200amperes" in new_name or "200 a" in new_name:
             modelo_escolhido = "FONTE 200 BOB"
+    if "k600" in new_name and "controle" in new_name and "jfa" in new_name and "fonte" not in new_name and "k1200" not in new_name:
+        modelo_escolhido = "K600"
+    if "k1200" in new_name and "controle" in new_name and "jfa" in new_name and "fonte" not in new_name and "k600" not in new_name:
+        modelo_escolhido = "K1200"
+    if ("controle wr" in new_name or "wr" in new_name) and "controle" in new_name and "jfa" in new_name and "fonte" not in new_name:
+        modelo_escolhido = "CONTROLE WR"
+    if "acqua" in new_name and "controle" in new_name and "jfa" in new_name and "fonte" not in new_name:
+        modelo_escolhido = "ACQUA"
     
             
     modelos = {
@@ -125,7 +149,11 @@ def identificar_modelo(nome, preco, categoria):
         "FONTE 90 BOB": {"classico": (372.05, 445.19), "premium": (422.93, 466.39)},
         "FONTE 120 BOB": {"classico": (444.55, 525.75), "premium": (499.46, 568.15)},
         "FONTE 200 BOB": {"classico": (562.85, 657.19), "premium": (624.33, 731.39)},
-        "FONTE 200 MONO STORM": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
+        "FONTE 200 MONO": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
+        "K600": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
+        "K1200": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
+        "CONTROLE WR": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
+        "ACQUA": {"classico": (602.61, 775.38), "premium": (736.61, 815.66)},
     }
     
     if categoria not in ["classico", "premium"]:
@@ -208,7 +236,7 @@ def verificar_politica(modelo, preco, tipo):
             elif preco < fonte200liteClassico:
                 return "Baixo";
             return "Igual";
-        elif modelo == "FONTE 200 MONO STORM":
+        elif modelo == "FONTE 200 MONO":
             if preco > fonte200monoClassico:
                 return "Acima";
             elif preco < fonte200monoClassico:
@@ -218,6 +246,30 @@ def verificar_politica(modelo, preco, tipo):
             if preco > fonte200Classico:
                 return "Acima";
             elif preco < fonte200Classico:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "K600":
+            if preco > k600Classico:
+                return "Acima";
+            elif preco < k600Classico:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "K1200":
+            if preco > k1200Classico:
+                return "Acima";
+            elif preco < k1200Classico:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "CONTROLE WR":
+            if preco > controleWrClassico:
+                return "Acima";
+            elif preco < controleWrClassico:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "ACQUA":
+            if preco > acquaClassico:
+                return "Acima";
+            elif preco < acquaClassico:
                 return "Baixo";
             return "Igual";
     elif tipo == "premium" and preco:
@@ -287,7 +339,7 @@ def verificar_politica(modelo, preco, tipo):
             elif preco < fonte200litePremium:
                 return "Baixo";
             return "Igual";
-        elif modelo == "FONTE 200 MONO STORM":
+        elif modelo == "FONTE 200 MONO":
             if preco > fonte200monoPremium:
                 return "Acima";
             elif preco < fonte200monoPremium:
@@ -299,6 +351,31 @@ def verificar_politica(modelo, preco, tipo):
             elif preco < fonte200Premium:
                 return "Baixo";
             return "Igual";
+        elif modelo == "K600":
+            if preco > k600Premium:
+                return "Acima";
+            elif preco < k600Premium:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "K1200":
+            if preco > k1200Premium:
+                return "Acima";
+            elif preco < k1200Premium:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "CONTROLE WR":
+            if preco > controleWrPremium:
+                return "Acima";
+            elif preco < controleWrPremium:
+                return "Baixo";
+            return "Igual";
+        elif modelo == "ACQUA":
+            if preco > acquaPremium:
+                return "Acima";
+            elif preco < acquaPremium:
+                return "Baixo";
+            return "Igual";
+
     return ""
 
 
