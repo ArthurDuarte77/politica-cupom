@@ -4,7 +4,13 @@ from openpyxl.utils.exceptions import InvalidFileException
 from unidecode import unidecode
 import scrapy
 import pandas
+from datetime import datetime
 
+
+data_atual = datetime.now()
+
+# Formata a data no formato dia/mês/ano
+data_formatada = data_atual.strftime("%d/%m/%Y")
 start_row = 20  
 end_row = 37
 num_rows = end_row - start_row
@@ -382,7 +388,7 @@ def verificar_politica(modelo, preco, tipo):
 class MlSpider(scrapy.Spider):
     name = "ml"
     allowed_domains = ["mercadolivre.com.br"]
-    start_urls = ["https://lista.mercadolivre.com.br/pagina/radicalsom/"]
+    start_urls = ["https://lista.mercadolivre.com.br/fonte-60a-jfa#D[A:fonte%2060a%20jfa]"]
     items = []
     loja = ""
     last_part = ""
@@ -397,6 +403,8 @@ class MlSpider(scrapy.Spider):
         yield scrapy.Request(url=self.palavra, callback=self.parse_img)
 
     def parse_img(self, response):
+        self.last_part = self.loja
+        self.last_part = unidecode(self.last_part.lower())
         self.contagem += 1
         for i in response.xpath('//*[@id="root-app"]/div/div[4]/section/ol/li'):
             nome = i.xpath('.//div/div/div[2]/div/div[1]/a/@title').get()
@@ -435,6 +443,8 @@ class MlSpider(scrapy.Spider):
             modelo = identificar_modelo(nome, preco, is_classico)
             politica = verificar_politica(modelo, preco, is_classico)
             self.items.append({
+                "data": data_formatada,
+                "loja": self.last_part,
                 "nome": nome,
                 "modelo": modelo,
                 "preco": preco,
@@ -482,6 +492,8 @@ class MlSpider(scrapy.Spider):
                 modelo = identificar_modelo(nome, preco, is_classico)
                 politica = verificar_politica(modelo, preco, is_classico)
                 self.items.append({
+                    "data": data_formatada,
+                    "loja": self.last_part,
                     "nome": nome,
                     "modelo": modelo,
                     "preco": preco,

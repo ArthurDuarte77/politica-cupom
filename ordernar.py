@@ -7,18 +7,21 @@ caminho_pasta = 'dados'
 pasta_dados = ''
 file_path = os.path.join(pasta_dados, 'planilha_final.xlsx')
 
-# Inicializa o escritor de Excel
-with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
-    # Percorre todos os arquivos na pasta
-    for arquivo in os.listdir(caminho_pasta):
-        if arquivo.endswith('.xlsx'):
-            # Lê cada planilha Excel
-            df = pd.read_excel(os.path.join(caminho_pasta, arquivo))
-            
-            # Gera o nome da aba a partir do nome do arquivo
-            nome_aba = os.path.splitext(arquivo)[0]
-            nome_aba = unidecode(nome_aba.lower())
-            
-            # Escreve o DataFrame na aba correspondente
-            df.to_excel(writer, sheet_name=nome_aba, index=False)
+# Inicializa uma lista para armazenar todos os DataFrames
+todos_dfs = []
 
+# Percorre todos os arquivos na pasta
+for arquivo in os.listdir(caminho_pasta):
+    if arquivo.endswith('.xlsx'):
+        # Lê cada planilha Excel
+        df = pd.read_excel(os.path.join(caminho_pasta, arquivo))
+        
+        todos_dfs.append(df)
+
+# Concatena todos os DataFrames em um único DataFrame
+df_final = pd.concat(todos_dfs, ignore_index=True)
+
+# Escreve o DataFrame concatenado na aba única
+df_final.to_excel(file_path, sheet_name='dados_combinados', index=False)
+
+print(f'Dados combinados foram salvos em {file_path}')
