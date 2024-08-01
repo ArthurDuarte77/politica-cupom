@@ -122,6 +122,7 @@ for i in driver.find_elements(By.XPATH ,'//*[@id="table_result"]/tbody/tr'):
     url = url.get_attribute("href")
     loja = i.find_element(By.XPATH, './/td[2]/a')
     commands.append([url, loja.text])
+        
 
 
 

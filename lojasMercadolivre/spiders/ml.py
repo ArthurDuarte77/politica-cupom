@@ -393,6 +393,8 @@ class MlSpider(scrapy.Spider):
     loja = ""
     last_part = ""
     contagem = 0
+    is_full = ""
+    fullis = ""
 
     def __init__(self, palavra=None, loja=None, *args, **kwargs):
         super(MlSpider, self).__init__(*args, **kwargs)
@@ -402,6 +404,26 @@ class MlSpider(scrapy.Spider):
     def parse(self, response, **kwargs):
         yield scrapy.Request(url=self.palavra, callback=self.parse_img)
 
+    def parse_produto(self, response, nome, preco, link, is_classico):
+        full = response.xpath('.//div[@class="ui-pdp-media ui-pdp-promotions-pill-label__icon"]')        
+        if full:
+            is_full = "FULL"
+        else:
+            is_full = "NA"
+        modelo = identificar_modelo(nome, preco, is_classico)
+        politica = verificar_politica(modelo, preco, is_classico)
+        self.items.append({
+            "data": data_formatada,
+            "loja": self.last_part,
+            "nome": nome,
+            "modelo": modelo,
+            "preco": preco,
+            "politica": politica,
+            "full": is_full,
+            "tipo": is_classico,
+            "link": link,
+        })
+    
     def parse_img(self, response):
         self.last_part = self.loja
         self.last_part = unidecode(self.last_part.lower())
@@ -430,29 +452,17 @@ class MlSpider(scrapy.Spider):
                     break
                 else: 
                     is_classico = "classico"
-            if full:
-                is_full = "FULL"
-            else:
-                full = i.xpath('.//div/div/div[2]/div/div[5]/div/p').get()
-                is_full = "NA"
+            # if full:
+            #     is_full = "FULL"
+            # else:
+            #     full = i.xpath('.//div/div/div[2]/div/div[5]/div/p').get()
+            #     if full:
+            #         is_full = "FULL"
+            #     is_full = "NA"
 
             if not nome:
                 nome = i.xpath('.//div/div/div[2]/div/div[2]/a/@title').get()
-
-
-            modelo = identificar_modelo(nome, preco, is_classico)
-            politica = verificar_politica(modelo, preco, is_classico)
-            self.items.append({
-                "data": data_formatada,
-                "loja": self.last_part,
-                "nome": nome,
-                "modelo": modelo,
-                "preco": preco,
-                "politica": politica,
-                "full": is_full,
-                "tipo": is_classico,
-                "link": link,
-            })
+            yield scrapy.Request(url=link, callback=self.parse_produto, cb_kwargs={"nome": nome, "preco": preco, "link": link, "is_classico": is_classico})
         
         if len(self.items) == 0:
             
@@ -464,6 +474,7 @@ class MlSpider(scrapy.Spider):
                 preco = i.xpath('.//span[@class = "andes-money-amount ui-search-price__part ui-search-price__part--medium andes-money-amount--cents-superscript"]/span[@class = "andes-money-amount__fraction"][1]/text()').get()
                 centavos = i.xpath('.//span[@class = "andes-money-amount ui-search-price__part ui-search-price__part--medium andes-money-amount--cents-superscript"]/span[@class = "andes-money-amount__cents andes-money-amount__cents--superscript-24"][1]/text()').get()
                 full = i.xpath('.//div/div/div[2]/div[2]/div[1]/div[3]/div/p').get()
+                
                 sem_juros = i.xpath('.//div/div/div[2]/div[2]/div[1]/div[1]/span/text()').getall()
                 if not link:
                     continue
@@ -479,30 +490,20 @@ class MlSpider(scrapy.Spider):
                         break
                     else: 
                         is_classico = "classico"
-                if full:
-                    is_full = "FULL"
-                else:
-                    full = i.xpath('.//div/div/div[2]/div/div[5]/div/p').get()
-                    is_full = "NA"
+                # if full:
+                #     is_full = "FULL"
+                # else:
+                #     full = i.xpath('.//div/div/div[2]/div/div[5]/div/p').get()
+                #     if full:
+                #         is_full = "FULL"
+                #     is_full = "NA"
 
                 if not nome:
                     nome = i.xpath('.//div/div/div[2]/div/div[2]/a/@title').get()
-
-
-                modelo = identificar_modelo(nome, preco, is_classico)
-                politica = verificar_politica(modelo, preco, is_classico)
-                self.items.append({
-                    "data": data_formatada,
-                    "loja": self.last_part,
-                    "nome": nome,
-                    "modelo": modelo,
-                    "preco": preco,
-                    "politica": politica,
-                    "full": is_full,
-                    "tipo": is_classico,
-                    "link": link,
-                })
-        
+                    
+                yield scrapy.Request(url=link, callback=self.parse_produto, cb_kwargs={"nome": nome, "preco": preco, "link": link, "is_classico": is_classico})
+                
+                
         next_page = response.xpath('//li[@class = "andes-pagination__button andes-pagination__button--next"]/a[@class = "andes-pagination__link"]/@href').get()
         if next_page:
             yield scrapy.Request(url=next_page, callback=self.parse_img)
