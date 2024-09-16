@@ -109,6 +109,7 @@ time.sleep(3)
 driver.get("https://corp.shoppingdeprecos.com.br/vendedores/busca")
 
 
+time.sleep(3)
 driver.find_element(By.XPATH, '//*[@id="txtTermo"]').send_keys("jfa")
 time.sleep(1)
 driver.execute_script("tabela(0);")
