@@ -8,9 +8,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import *
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+    
 service = Service()
 options = webdriver.ChromeOptions()
 titulo_arquivo = ""
@@ -21,7 +22,7 @@ options.add_argument("--disable-extensions")
 prefs = {"profile.managed_default_content_settings.images": 2}
 options.add_experimental_option("prefs", prefs)
 
-
+paginas = 0
 driver = webdriver.Chrome(service=service, options=options)
 
 
@@ -54,6 +55,8 @@ def load_cookies(driver, cookies_file):
 urls = []
 
 def cupom(driver, count=1):
+    global paginas  # Corrigido para usar a variável global
+    paginas += 1  # Corrigido para incrementar a variável global
     driver.get(f"https://www.mercadolivre.com.br/cupons/filter?category=acc_vertical&page={count}")
     
     counter = 0
@@ -67,7 +70,6 @@ def cupom(driver, count=1):
                 break
             time.sleep(0.5)
     time.sleep(1)
-
     # Encontrar todos os botões
     botoes = driver.find_elements(By.XPATH, '//button[@class="andes-button andes-button--small andes-button--quiet"]')
     indices = range(len(botoes)) 
@@ -89,35 +91,11 @@ def cupom(driver, count=1):
         }
     '''
     driver.execute_script(script)
-    try:
-        for index in indices:
-            print(index + 1)
-            if driver.find_element(By.XPATH, f'//*[@id="filtercoupons"]/div/div[2]/div/div[{index + 1}]/div[2]/div[2]/div[2]/span[1]').text == "Em produtos selecionados":
-                continue
-            # Armazenar a URL atual
-            current_url = driver.current_url
-            botao = driver.find_element(By.XPATH, f'//div[{index + 1}]/div[4]/button[@class="andes-button andes-button--small andes-button--quiet"]')
-            # Clicar no botão
-            botao.click()
-            time.sleep(2)  # Esperar a nova página carregar
-
-            # Capturar a URL da nova página
-            new_url = driver.current_url
-            urls.append(new_url)
-
-            driver.back()
-            time.sleep(2)  # Esperar a página anterior carregar
-
-            # Garantir que voltamos para a página correta
-            if driver.current_url != current_url:
-                driver.get(current_url)
-                time.sleep(2)
-    except:
-        return
-
+    time.sleep(3)
     count += 1
     try:
         if driver.find_element(By.XPATH, '/html/body/main/div/div/div[@class="empty-state-container"]'):
+            print(count)
             return
     except:
         cupom(driver, count)
@@ -131,8 +109,28 @@ finally:
 def run_command(cmd):
     subprocess.run(["python", "rodar.py", cmd])
 
+requests.post("http://134.122.29.170:3000/api/sendText", {
+    "chatId": "120363336339920249@g.us",
+    "text": f"Segue anúncios com cupom",
+    "session": "default"
+})
+
+for i in range(paginas):  # Corrigido para usar a variável global
+    with open('./cookies.json', 'r') as file:
+        cookies = json.load(file)
+        response = requests.get(f"https://www.mercadolivre.com.br/cupons/active?category=acc_vertical&page={i+1}", cookies={cookie['name']: cookie['value'] for cookie in cookies}).text.split('"coupons":[')[1].split('],"pagination"')[0]
+        coupons = json.loads("[" + response + "]")
+        for coupon in coupons:
+            urls.append(coupon['action']['value'])
+            
+if len(urls) == 0:
+    requests.post("http://134.122.29.170:3000/api/sendText", {
+        "chatId": "120363336339920249@g.us",
+        "text": f"Nenhum anúncio com cupom",
+        "session": "default"
+    })
+
 
 if __name__ == '__main__':
     with ThreadPoolExecutor(max_workers=10) as executor:
         list(tqdm(executor.map(run_command, urls), total=len(urls)))
-        
